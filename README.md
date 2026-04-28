@@ -65,7 +65,7 @@ sf project deploy start --target-org <your-org-alias>
 5. Configure the four properties in the right-hand panel
 6. **Save** and **Activate** the page
 
-Watch the [demo video](docs/demo.mp4) (or live on the Case page in your org).
+
 
 ---
 
