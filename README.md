@@ -1,5 +1,12 @@
 # accountTimeline
 
+![Demo](./docs/demo.gif)
+
+## Preview
+
+![Screenshot](./docs/screenshot.png)
+
+
 A lightweight Salesforce Lightning Web Component that surfaces a true **360° view of the customer** directly on the Case record page — the parent Account's full activity history **and** every sibling Case under that Account, in one configurable chronological view.
 
 > **The perspective fix.** Most Salesforce timeline packages assume you're standing on the Account, looking down at its Cases. But service agents live on the **Case**, not the Account. `accountTimeline` flips that — from any Case, see the entire customer story without opening four tabs.
@@ -185,3 +192,5 @@ MIT — see [LICENSE](LICENSE).
 Built by **Araz** at **Bold Generic Solutions**.
 
 If this saved your team some clicks, a ⭐ on the repo would mean a lot.
+
+
