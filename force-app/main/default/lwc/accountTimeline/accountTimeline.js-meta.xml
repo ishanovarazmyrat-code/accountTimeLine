@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    @description  LWC metadata for accountTimeline v1.0.
+
+                  App Builder configurable properties:
+                  - hideActivities      Hide the Account Activities section (default: false = visible)
+                  - hideCases           Hide the Case History section (default: false = visible)
+                  - mixSections         Merge both sections into one chronological list (default: false)
+                  - caseSubtitleFields  Comma-separated Case fields shown as subtitles beneath
+                                        the Case Number (default: "Subject,Status").
+                                        Standard fields: Subject, Status, Type, Priority, Owner.Name
+                                        Custom fields:   any API name (e.g. Category_1__c)
+
+                  Note: LWC Boolean @api properties cannot be initialized to true.
+                  hideActivities and hideCases use an opt-out pattern — leave unchecked
+                  to show the section, check to hide it.
+
+    @author       Araz
+    @version      1.0
+    @date         2026-04-28
+-->
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__RecordPage</target>
+    </targets>
+    <targetConfigs>
+        <!-- Restrict to Case record pages only -->
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>Case</object>
+            </objects>
+
+            <!--
+                hideActivities: check to hide the Account Activities section.
+                Default: false (section is visible).
+            -->
+            <property
+                name="hideActivities"
+                type="Boolean"
+                default="false"
+                label="Hide Account Activities"
+                description="Check to hide the Account Activities section (Tasks, Events, Emails linked to the parent Account)." />
+
+            <!--
+                hideCases: check to hide the Case History section.
+                Default: false (section is visible).
+            -->
+            <property
+                name="hideCases"
+                type="Boolean"
+                default="false"
+                label="Hide Case History"
+                description="Check to hide the Case History section with nested Case activities." />
+
+            <!--
+                mixSections: merge Activities and Cases into one list.
+                Default: false (keep in separate sections).
+            -->
+            <property
+                name="mixSections"
+                type="Boolean"
+                default="false"
+                label="Mix Activities and Cases"
+                description="When enabled, merges Account Activities and Case History into a single chronological list." />
+
+            <!--
+                caseSubtitleFields: comma-separated Salesforce API field names to display
+                as subtitle lines beneath the Case Number in the timeline.
+                Standard fields: Subject, Status, Type, Priority, Owner.Name
+                Custom fields:   use the full API name, e.g. Category_1__c
+                The label shown in the UI is derived automatically from the field's
+                metadata label — no code changes needed to add new fields.
+                Default: "Subject,Status"
+            -->
+            <property
+                name="caseSubtitleFields"
+                type="String"
+                default="Subject,Status"
+                label="Case Row Subtitle Fields"
+                description="Comma-separated Salesforce API field names to show beneath the Case Number. Use exact API names: Subject, Status, Type, Priority, or any custom field like Category_1__c. Labels are resolved automatically from field metadata." />
+
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

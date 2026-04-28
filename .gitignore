@@ -1,0 +1,32 @@
+# ─── Salesforce DX ─────────────────────────────────────────────
+.sfdx/
+.sf/
+.localdevserver/
+deploy-options.json
+
+# Generated metadata
+**/jsconfig.json
+**/.eslintrc.json
+
+# ─── Logs ──────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Editor / IDE ──────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Node (if you add eslint / prettier later) ─────────────────
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# ─── Build / packaging ─────────────────────────────────────────
+mdapi-output/
+package.xml

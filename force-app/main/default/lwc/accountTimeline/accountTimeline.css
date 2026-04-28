@@ -1,0 +1,268 @@
+/**
+ * @description  Account Activity Timeline — Component Styles v1.0
+ *               Scoped to the accountTimeline LWC.
+ *
+ * @author       Araz
+ * @version      1.0
+ * @date         2026-04-28
+ */
+
+/* ── Account name link in the card title ────────────────────── */
+.account-header-link {
+    color: #0070d2;
+    font-weight: 700;
+    text-decoration: none;
+}
+.account-header-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Filter toolbar ─────────────────────────────────────────── */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+.filter-label {
+    font-size: 0.8125rem;
+    color: #706e6b;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+.filter-combobox {
+    min-width: 140px;
+    max-width: 200px;
+}
+
+/* ── Collapsible section container ─────────────────────────── */
+.timeline-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Section header — clickable */
+.section-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f3f2f2;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid #e0e0e0;
+}
+.section-header:hover {
+    background: #e8e8e8;
+}
+.section-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #3e3e3c;
+}
+
+/* Item count pill badge */
+.section-count-badge {
+    background: #dddbda;
+    color: #514f4d;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 7px;
+}
+
+/* ── Individual timeline item wrapper ───────────────────────── */
+.timeline-item {
+    position: relative;
+    padding: 0 12px;
+}
+
+/* Vertical connector line */
+.timeline-connector {
+    position: absolute;
+    left: 30px;
+    top: 42px;
+    bottom: 0;
+    width: 2px;
+    background-color: #dddbda;
+}
+/* Hide connector on the last item to avoid dangling line */
+.timeline-item:last-child .timeline-connector {
+    display: none;
+}
+
+/* ── Item card ──────────────────────────────────────────────── */
+.timeline-card {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f3f2f2;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.timeline-card:hover {
+    background: #f8f7f7;
+}
+
+/* ── Item header row ────────────────────────────────────────── */
+.timeline-item-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Record title link */
+.timeline-item-title {
+    font-weight: 600;
+    color: #0070d2;
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+.timeline-item-title:hover {
+    text-decoration: underline;
+}
+
+/* Type badge: TASK / EVENT / EMAIL */
+.timeline-type-badge {
+    font-size: 0.68rem;
+    background: #e8e8e8;
+    color: #514f4d;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Exact date — pushed to the right like standard Activity component */
+.timeline-date {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* Subtitle line below the title */
+.timeline-subtitle {
+    font-size: 0.8rem;
+    color: #706e6b;
+    margin-top: 2px;
+    margin-left: 20px;
+}
+
+/* Bold label prefix inside a subtitle line, e.g. "Subject:" */
+.subtitle-field-label {
+    font-weight: 600;
+    color: #514f4d;
+}
+
+/* ── Expanded detail panel ──────────────────────────────────── */
+.timeline-item-detail {
+    background: #f8f7f7;
+    border-radius: 4px;
+    padding: 10px 12px;
+    border-left: 3px solid #0070d2;
+    margin-top: 6px;
+}
+
+/* Field label in the detail panel */
+.detail-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #706e6b;
+    margin-bottom: 2px;
+}
+
+/* Description / body text */
+.timeline-description {
+    font-size: 0.8125rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+/* ── Nested Case activities ─────────────────────────────────── */
+
+/* "Case Activities" label above the nested list */
+.nested-activities-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #706e6b;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Each nested activity row */
+.nested-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.nested-activity-item:last-child {
+    border-bottom: none;
+}
+
+.nested-body {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.8125rem;
+}
+
+/* Nested record link */
+.nested-title {
+    font-weight: 600;
+    color: #0070d2;
+    text-decoration: none;
+    font-size: 0.8125rem;
+}
+.nested-title:hover {
+    text-decoration: underline;
+}
+
+/* Small type badge inside nested row */
+.nested-badge {
+    font-size: 0.65rem;
+    background: #e8e8e8;
+    color: #514f4d;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Date label in nested row */
+.nested-date {
+    font-size: 0.72rem;
+    color: #706e6b;
+}
+
+/* ── Load More button ───────────────────────────────────────── */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    border-top: 1px solid #f3f2f2;
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.empty-state {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    color: #706e6b;
+    font-size: 0.875rem;
+}

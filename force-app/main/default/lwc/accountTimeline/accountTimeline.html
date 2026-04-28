@@ -1,0 +1,436 @@
+<!--
+    @description  Account Activity Timeline — HTML Template v1.0
+
+                  Layout:
+                  1. Card title with clickable Account name link
+                  2. Filter toolbar — date range dropdown + refresh button +
+                     "Mix Activities & Cases" runtime toggle
+                  3. "Account Activities" collapsible section (Tasks, Events, Emails)
+                     — shown only when hideActivities = false (default)
+                  4. "Case History" collapsible section
+                     — each Case row is expandable and shows:
+                        · Subject, Status, Description (detail fields)
+                        · Nested mini-timeline of the Case's own activities
+                     — shown only when hideCases = false (default)
+                  5. When mixSections = true, both sections are merged into a single
+                     chronological "All Activity" flat list
+
+                  App Builder configurable properties (set via targetConfig):
+                  - hideActivities    {Boolean}  Hide the Account Activities section
+                  - hideCases         {Boolean}  Hide the Case History section
+                  - mixSections       {Boolean}  Merge both sections into one list
+                  - caseSubtitleFields {String}  Comma-separated Case API field names
+
+    @author       Araz
+    @version      1.0
+    @date         2026-04-28
+-->
+<template>
+    <lightning-card icon-name="standard:account">
+
+        <!-- Card title: "Account Activity Timeline — GenePoint" -->
+        <span slot="title">
+            Account Activity Timeline
+            <template if:true={accountName}>
+                &nbsp;—&nbsp;
+                <a
+                    href={accountUrl}
+                    target="_blank"
+                    class="account-header-link"
+                    onclick={stopPropagation}>
+                    {accountName}
+                </a>
+            </template>
+        </span>
+
+        <div class="slds-p-around_medium">
+
+            <!-- ════════════════════════════════════════
+                 FILTER TOOLBAR
+                 Date range combobox + refresh button
+            ════════════════════════════════════════ -->
+            <div class="filter-bar slds-m-bottom_medium">
+                <span class="filter-label">
+                    <lightning-icon icon-name="utility:filter" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                    Filters:
+                </span>
+                <lightning-combobox
+                    name="dateFilter"
+                    label=""
+                    variant="label-hidden"
+                    value={selectedDateFilter}
+                    options={dateFilterOptions}
+                    onchange={handleDateFilterChange}
+                    class="filter-combobox">
+                </lightning-combobox>
+                <lightning-button-icon
+                    icon-name="utility:refresh"
+                    alternative-text="Refresh"
+                    size="small"
+                    variant="bare"
+                    onclick={handleRefresh}
+                    class="slds-m-left_x-small">
+                </lightning-button-icon>
+
+                <!-- Checkbox to toggle mix mode -->
+                <div class="slds-m-left_auto slds-p-left_small" style="display: flex; align-items: center;">
+                    <lightning-input
+                        type="checkbox"
+                        label="Mix Activities & Cases"
+                        checked={mixSections}
+                        onchange={handleMixToggle}
+                        class="mix-checkbox">
+                    </lightning-input>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════
+                 LOADING STATE
+            ════════════════════════════════════════ -->
+            <template if:true={isLoading}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:false={isLoading}>
+
+                <!-- Error alert -->
+                <template if:true={hasError}>
+                    <div class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_small" role="alert">
+                        <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        {errorMessage}
+                    </div>
+                </template>
+
+                <!-- ════════════════════════════════════════
+                     MIXED MODE — single chronological list
+                     Shown when mixSections = true.
+                     Renders activities and cases interleaved
+                     in one flat "All Activity" section.
+                ════════════════════════════════════════ -->
+                <template if:true={mixSections}>
+                    <div class="timeline-section slds-m-bottom_medium">
+                        <div class="section-header" onclick={toggleActivitiesSection}>
+                            <lightning-icon icon-name={activitiesChevronIcon} size="xx-small" class="slds-m-right_x-small"></lightning-icon>
+                            <lightning-icon icon-name="standard:activity"     size="small"    class="slds-m-right_x-small"></lightning-icon>
+                            <span class="section-title">All Activity</span>
+                            <span class="section-count-badge slds-m-left_x-small">{mixedItemCount}</span>
+                        </div>
+
+                        <template if:true={activitiesSectionExpanded}>
+                            <!-- Empty state -->
+                            <template if:true={mixedIsEmpty}>
+                                <div class="empty-state slds-p-around_small">
+                                    <span class="slds-text-color_weak">No activity found for the selected period.</span>
+                                </div>
+                            </template>
+
+                            <!-- Flat interleaved list of activities + cases -->
+                            <template for:each={mixedItems} for:item="item">
+                                <div key={item.id} class="timeline-item">
+                                    <div class="timeline-connector"></div>
+                                    <div class="slds-media timeline-card">
+                                        <div class="slds-media__figure slds-m-right_small">
+                                            <lightning-icon icon-name={item.icon} size="small" alternative-text={item.type}></lightning-icon>
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <div class="timeline-item-header" onclick={toggleMixedItem} data-id={item.id}>
+                                                <lightning-icon icon-name={item.expandIcon} size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                <a href={item.recordUrl} target="_blank" class="timeline-item-title" onclick={stopPropagation}>{item.title}</a>
+                                                <span class="timeline-type-badge slds-m-left_x-small">{item.type}</span>
+                                                <span class="timeline-date">{item.exactDate}</span>
+                                            </div>
+                                            <template if:true={item.subtitle}>
+                                                <p class="timeline-subtitle">{item.subtitle}</p>
+                                            </template>
+                                            <!-- Configurable subtitle rows for Case items in mixed mode -->
+                                            <template if:true={item.isCaseType}>
+                                                <template for:each={item.subtitleRows} for:item="row">
+                                                    <p key={row.apiName} class="timeline-subtitle">
+                                                        <span class="subtitle-field-label">{row.label}:</span> {row.value}
+                                                    </p>
+                                                </template>
+                                            </template>
+                                            <!-- Expanded detail for mixed items -->
+                                            <template if:true={item.isExpanded}>
+                                                <template if:true={item.isCaseType}>
+                                                    <!-- Case detail with nested activities -->
+                                                    <div class="timeline-item-detail">
+                                                        <div class="slds-grid slds-wrap slds-m-bottom_x-small">
+                                                            <template if:true={item.subject}>
+                                                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Subject</p>
+                                                                    <p>{item.subject}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={item.status}>
+                                                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Status</p>
+                                                                    <p>{item.status}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={item.description}>
+                                                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Description</p>
+                                                                    <p class="timeline-description">{item.description}</p>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                        <!-- Nested Case activities -->
+                                                        <template if:true={item.hasActivities}>
+                                                            <p class="nested-activities-label">Case Activities</p>
+                                                            <template for:each={item.activities} for:item="act">
+                                                                <div key={act.id} class="nested-activity-item">
+                                                                    <div class="slds-m-right_x-small">
+                                                                        <lightning-icon icon-name={act.icon} size="xx-small" alternative-text={act.type}></lightning-icon>
+                                                                    </div>
+                                                                    <div class="nested-body">
+                                                                        <a href={act.recordUrl} target="_blank" class="nested-title" onclick={stopPropagation}>{act.title}</a>
+                                                                        <span class="nested-badge slds-m-left_xx-small">{act.type}</span>
+                                                                        <span class="nested-date slds-m-left_xx-small">{act.exactDate}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template if:false={item.isCaseType}>
+                                                    <!-- Activity detail -->
+                                                    <div class="timeline-item-detail">
+                                                        <div class="slds-grid slds-wrap">
+                                                            <template if:true={item.owner}>
+                                                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Owner / From</p>
+                                                                    <p>{item.owner}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={item.status}>
+                                                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Status / Location / To</p>
+                                                                    <p>{item.status}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={item.description}>
+                                                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Description</p>
+                                                                    <p class="timeline-description">{item.description}</p>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+                <!-- end mixSections -->
+
+                <!-- ════════════════════════════════════════
+                     SEPARATE MODE
+                     Shown when mixSections = false (default).
+                     Activities and Cases in their own sections.
+                ════════════════════════════════════════ -->
+                <template if:false={mixSections}>
+
+                    <!-- ── Account Activities section ── -->
+                    <template if:true={showActivities}>
+                        <div class="timeline-section slds-m-bottom_medium">
+                            <div class="section-header" onclick={toggleActivitiesSection}>
+                                <lightning-icon icon-name={activitiesChevronIcon} size="xx-small" class="slds-m-right_x-small"></lightning-icon>
+                                <lightning-icon icon-name="standard:activity"     size="small"    class="slds-m-right_x-small"></lightning-icon>
+                                <span class="section-title">Account Activities</span>
+                                <span class="section-count-badge slds-m-left_x-small">{items.length}</span>
+                            </div>
+
+                            <template if:true={activitiesSectionExpanded}>
+                                <template if:true={isEmpty}>
+                                    <div class="empty-state slds-p-around_small">
+                                        <span class="slds-text-color_weak">No activities found for the selected period.</span>
+                                    </div>
+                                </template>
+                                <template if:true={hasItems}>
+                                    <template for:each={items} for:item="item">
+                                        <div key={item.id} class="timeline-item">
+                                            <div class="timeline-connector"></div>
+                                            <div class="slds-media timeline-card">
+                                                <div class="slds-media__figure slds-m-right_small">
+                                                    <lightning-icon icon-name={item.icon} size="small" alternative-text={item.type}></lightning-icon>
+                                                </div>
+                                                <div class="slds-media__body">
+                                                    <div class="timeline-item-header" onclick={toggleItem} data-id={item.id}>
+                                                        <lightning-icon icon-name={item.expandIcon} size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <a href={item.recordUrl} target="_blank" class="timeline-item-title" onclick={stopPropagation}>{item.title}</a>
+                                                        <span class="timeline-type-badge slds-m-left_x-small">{item.type}</span>
+                                                        <span class="timeline-date">{item.exactDate}</span>
+                                                    </div>
+                                                    <template if:true={item.subtitle}>
+                                                        <p class="timeline-subtitle">{item.subtitle}</p>
+                                                    </template>
+                                                    <template if:true={item.isExpanded}>
+                                                        <div class="timeline-item-detail">
+                                                            <div class="slds-grid slds-wrap">
+                                                                <template if:true={item.owner}>
+                                                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                        <p class="detail-label">Owner / From</p>
+                                                                        <p>{item.owner}</p>
+                                                                    </div>
+                                                                </template>
+                                                                <template if:true={item.status}>
+                                                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                        <p class="detail-label">Status / Location / To</p>
+                                                                        <p>{item.status}</p>
+                                                                    </div>
+                                                                </template>
+                                                                <template if:true={item.dateValue}>
+                                                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                        <p class="detail-label">Date</p>
+                                                                        <p>{item.exactDate}</p>
+                                                                    </div>
+                                                                </template>
+                                                                <template if:true={item.description}>
+                                                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                        <p class="detail-label">Description</p>
+                                                                        <p class="timeline-description">{item.description}</p>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </template>
+                            </template>
+                        </div>
+                    </template>
+                    <!-- end Account Activities section -->
+
+                    <!-- ── Case History section ── -->
+                    <template if:true={showCases}>
+                        <div class="timeline-section">
+                            <div class="section-header" onclick={toggleCaseSection}>
+                                <lightning-icon icon-name={caseChevronIcon} size="xx-small" class="slds-m-right_x-small"></lightning-icon>
+                                <lightning-icon icon-name="standard:case"   size="small"    class="slds-m-right_x-small"></lightning-icon>
+                                <span class="section-title">Case History</span>
+                                <span class="section-count-badge slds-m-left_x-small">{caseTotalCount}</span>
+                            </div>
+
+                            <template if:true={casesSectionExpanded}>
+                                <template if:true={casesLoading}>
+                                    <div class="slds-align_absolute-center slds-p-around_small">
+                                        <lightning-spinner alternative-text="Loading cases..." size="small"></lightning-spinner>
+                                    </div>
+                                </template>
+                                <template if:true={noCases}>
+                                    <div class="empty-state slds-p-around_small">
+                                        <span class="slds-text-color_weak">No cases found for this account.</span>
+                                    </div>
+                                </template>
+
+                                <!-- Case items with nested activities -->
+                                <template for:each={caseItems} for:item="caseItem">
+                                    <div key={caseItem.id} class="timeline-item">
+                                        <div class="timeline-connector"></div>
+                                        <div class="slds-media timeline-card">
+                                            <div class="slds-media__figure slds-m-right_small">
+                                                <lightning-icon icon-name="standard:case" size="small" alternative-text="Case"></lightning-icon>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <!-- Case header: CaseNumber + date -->
+                                                <div class="timeline-item-header" onclick={toggleCaseItem} data-id={caseItem.id}>
+                                                    <lightning-icon icon-name={caseItem.expandIcon} size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                    <a href={caseItem.recordUrl} target="_blank" class="timeline-item-title" onclick={stopPropagation}>{caseItem.caseNumber}</a>
+                                                    <span class="timeline-date">{caseItem.exactDate}</span>
+                                                </div>
+                                                <!-- Configurable subtitle rows -->
+                                                <template for:each={caseItem.subtitleRows} for:item="row">
+                                                    <p key={row.apiName} class="timeline-subtitle">
+                                                        <span class="subtitle-field-label">{row.label}:</span> {row.value}
+                                                    </p>
+                                                </template>
+
+                                                <!-- Expanded: Subject, Status, Description + nested activities -->
+                                                <template if:true={caseItem.isExpanded}>
+                                                    <div class="timeline-item-detail">
+                                                        <div class="slds-grid slds-wrap slds-m-bottom_x-small">
+                                                            <template if:true={caseItem.subject}>
+                                                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Subject</p>
+                                                                    <p>{caseItem.subject}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={caseItem.status}>
+                                                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Status</p>
+                                                                    <p>{caseItem.status}</p>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={caseItem.description}>
+                                                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_x-small">
+                                                                    <p class="detail-label">Description</p>
+                                                                    <p class="timeline-description">{caseItem.description}</p>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+
+                                                        <!-- Nested mini-timeline: Case's own activities -->
+                                                        <template if:true={caseItem.hasActivities}>
+                                                            <p class="nested-activities-label">Case Activities</p>
+                                                            <template for:each={caseItem.activities} for:item="act">
+                                                                <div key={act.id} class="nested-activity-item">
+                                                                    <div class="slds-m-right_x-small">
+                                                                        <lightning-icon icon-name={act.icon} size="xx-small" alternative-text={act.type}></lightning-icon>
+                                                                    </div>
+                                                                    <div class="nested-body">
+                                                                        <a href={act.recordUrl} target="_blank" class="nested-title" onclick={stopPropagation}>{act.title}</a>
+                                                                        <span class="nested-badge slds-m-left_xx-small">{act.type}</span>
+                                                                        <span class="nested-date slds-m-left_xx-small">{act.exactDate}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+                                                        </template>
+
+                                                    </div>
+                                                </template>
+                                                <!-- end expanded -->
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <!-- end case items loop -->
+
+                                <!-- Load More button -->
+                                <template if:true={hasMoreCases}>
+                                    <div class="load-more-container">
+                                        <lightning-button
+                                            label={loadMoreLabel}
+                                            variant="neutral"
+                                            onclick={loadMoreCases}
+                                            disabled={casesLoading}>
+                                        </lightning-button>
+                                    </div>
+                                </template>
+
+                            </template>
+                            <!-- end casesSectionExpanded -->
+
+                        </div>
+                    </template>
+                    <!-- end Case History section -->
+
+                </template>
+                <!-- end separate mode -->
+
+            </template>
+            <!-- end if:false isLoading -->
+
+        </div>
+    </lightning-card>
+</template>
