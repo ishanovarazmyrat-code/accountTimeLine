@@ -135,7 +135,7 @@ Run with:
 sf apex run test --tests AccountTimelineControllerTest --code-coverage --result-format human
 ```
 
-Expected coverage: **≥ 85%**.
+Expected coverage: **≥ 100%**.
 
 ---
 

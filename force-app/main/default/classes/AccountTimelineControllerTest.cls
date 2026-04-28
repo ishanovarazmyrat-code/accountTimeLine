@@ -191,7 +191,7 @@ private class AccountTimelineControllerTest {
 
         Test.startTest();
         AccountTimelineController.CasePage page =
-            AccountTimelineController.getCases(acc.Id, 10, 0, 'ALL', 'Subject,Status');
+            AccountTimelineController.getCases(acc.Id, 20, 0, 'ALL', 'Subject,Status');
         Test.stopTest();
 
         // Find the primary Case in the results and check its nested activities
@@ -219,7 +219,7 @@ private class AccountTimelineControllerTest {
 
         Test.startTest();
         AccountTimelineController.CasePage page =
-            AccountTimelineController.getCases(acc.Id, 10, 0, 'ALL', 'Subject,Status');
+            AccountTimelineController.getCases(acc.Id, 20, 0, 'ALL', 'Subject,Status');
         Test.stopTest();
 
         // Find the primary Case which has Subject = 'Primary Test Case' and Status = 'New'

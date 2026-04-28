@@ -349,7 +349,8 @@ public with sharing class AccountTimelineController {
             ci.category       = (String) so.get('Type');
             ci.priority       = (String) so.get('Priority');
             ci.description    = (String) so.get('Description');
-            ci.owner          = (String) ((SObject) so.getSObject('Owner')).get('Name');
+            SObject ownerRecord = so.getSObject('Owner');
+            ci.owner          = ownerRecord != null ? (String) ownerRecord.get('Name') : null;
             ci.dateValue      = so.get('CreatedDate') != null ? String.valueOf(so.get('CreatedDate')) : '';
             ci.iconBackground = '#F2CF5B';
 
