@@ -26,9 +26,10 @@
         <target>lightning__RecordPage</target>
     </targets>
     <targetConfigs>
-        <!-- Restrict to Case record pages only -->
+        <!-- Available on Case and Account record pages -->
         <targetConfig targets="lightning__RecordPage">
             <objects>
+                <object>Account</object>
                 <object>Case</object>
             </objects>
 

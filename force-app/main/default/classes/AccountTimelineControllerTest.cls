@@ -2,15 +2,16 @@
  * @description  Test class for AccountTimelineController v1.0.
  *
  *               Test scenarios:
- *               1. Happy path — activity timeline returns AccountHeader + Task + Event
+ *               1. Happy path from Case — activity timeline returns AccountHeader + Task + Event
  *               2. Date filter — THIS_MONTH still returns today's records
  *               3. No Account — Case with no AccountId returns empty list
  *               4. Invalid date filter is sanitized — does not break the query
- *               5. getCases first page — returns exactly 10 items
- *               6. getCases second page — returns remaining items
- *               7. getCases nested activities — Case has a linked Task
- *               8. getCases subtitle rows — subtitleRows populated for requested fields
- *               9. getCases invalid field — unknown field name is ignored safely
+ *               5. Happy path from Account — activity timeline works directly on Account record pages
+ *               6. getCases first page — returns exactly 10 items
+ *               7. getCases second page — returns remaining items
+ *               8. getCases nested activities — Case has a linked Task
+ *               9. getCases subtitle rows — subtitleRows populated for requested fields
+ *               10. getCases invalid field — unknown field name is ignored safely
  *
  * @author       Araz
  * @version      1.0
@@ -86,7 +87,7 @@ private class AccountTimelineControllerTest {
 
         Test.startTest();
         List<AccountTimelineController.TimelineItem> items =
-            AccountTimelineController.getAccountTimeline(c.Id, 'ALL');
+            AccountTimelineController.getAccountTimeline(c.Id, 'Case', 'ALL');
         Test.stopTest();
 
         System.assert(items.size() >= 3, 'Expected AccountHeader + Task + Event at minimum');
@@ -103,7 +104,7 @@ private class AccountTimelineControllerTest {
 
         Test.startTest();
         List<AccountTimelineController.TimelineItem> items =
-            AccountTimelineController.getAccountTimeline(c.Id, 'THIS_MONTH');
+            AccountTimelineController.getAccountTimeline(c.Id, 'Case', 'THIS_MONTH');
         Test.stopTest();
 
         System.assertEquals('AccountHeader', items[0].type, 'First item must always be AccountHeader');
@@ -119,7 +120,7 @@ private class AccountTimelineControllerTest {
 
         Test.startTest();
         List<AccountTimelineController.TimelineItem> items =
-            AccountTimelineController.getAccountTimeline(orphan.Id, 'ALL');
+            AccountTimelineController.getAccountTimeline(orphan.Id, 'Case', 'ALL');
         Test.stopTest();
 
         System.assertEquals(0, items.size(), 'Expected empty list for Case with no Account');
@@ -136,12 +137,30 @@ private class AccountTimelineControllerTest {
         Test.startTest();
         // Pass a value that looks like a SOQL injection attempt
         List<AccountTimelineController.TimelineItem> items =
-            AccountTimelineController.getAccountTimeline(c.Id, 'TODAY) OR (1=1');
+            AccountTimelineController.getAccountTimeline(c.Id, 'Case', 'TODAY) OR (1=1');
         Test.stopTest();
 
         // Must not throw, and must still return at least AccountHeader
         System.assert(items.size() >= 1, 'Sanitizer should fall back to no filter, returning header');
         System.assertEquals('AccountHeader', items[0].type, 'AccountHeader must be present');
+    }
+
+    /**
+     * @description  Account record page path: the current record Id is already
+     *               the Account Id, so the controller should not require a Case.
+     */
+    @isTest
+    static void testGetAccountTimeline_fromAccountRecordPage() {
+        Account acc = [SELECT Id FROM Account LIMIT 1];
+
+        Test.startTest();
+        List<AccountTimelineController.TimelineItem> items =
+            AccountTimelineController.getAccountTimeline(acc.Id, 'Account', 'ALL');
+        Test.stopTest();
+
+        System.assert(items.size() >= 3, 'Expected AccountHeader + Task + Event at minimum');
+        System.assertEquals('AccountHeader', items[0].type, 'First item must be AccountHeader');
+        System.assertEquals(acc.Id, items[0].id, 'AccountHeader Id must match the current Account');
     }
 
     // ─────────────────────────────────────────────────────────────

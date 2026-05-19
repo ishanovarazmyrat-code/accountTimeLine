@@ -1,7 +1,8 @@
 /**
  * @description  Apex controller for the Account Activity Timeline LWC.
- *               Retrieves Tasks, Events, EmailMessages, and Cases linked to the
- *               parent Account of a given Case record.
+ *               Retrieves Tasks, Events, EmailMessages, and Cases linked to an
+ *               Account, either directly from an Account record page or from the
+ *               parent Account of a Case record.
  *
  *               Returns:
  *               1. An AccountHeader item (index 0) with Account Id and Name.
@@ -49,36 +50,29 @@ public with sharing class AccountTimelineController {
 
     /**
      * @description  Returns activity items and the AccountHeader for the
-     *               parent Account of the given Case.
+     *               current Account or the parent Account of the current Case.
      *               Optionally filters by a SOQL date literal (e.g. THIS_MONTH).
      *
-     * @param        caseId      Id of the Case record currently being viewed
-     * @param        dateFilter  SOQL date literal string or 'ALL' for no filter
+     * @param        recordId       Id of the Case or Account record currently being viewed
+     * @param        objectApiName  API name of the current record object
+     * @param        dateFilter     SOQL date literal string or 'ALL' for no filter
      * @return       List<TimelineItem> AccountHeader first, then sorted activity items
      */
     @AuraEnabled(cacheable=true)
-    public static List<TimelineItem> getAccountTimeline(Id caseId, String dateFilter) {
+    public static List<TimelineItem> getAccountTimeline(Id recordId, String objectApiName, String dateFilter) {
 
-        // Resolve the parent Account from the Case
-        Case c = [
-            SELECT AccountId, Account.Name
-            FROM   Case
-            WHERE  Id = :caseId
-            LIMIT  1
-        ];
-
-        // Guard: no parent Account
-        if (c.AccountId == null) {
+        AccountContext accountContext = resolveAccountContext(recordId, objectApiName);
+        if (accountContext == null || accountContext.accountId == null) {
             return new List<TimelineItem>();
         }
 
-        Id accountId = c.AccountId;
+        Id accountId = accountContext.accountId;
         List<TimelineItem> items = new List<TimelineItem>();
 
         // ── AccountHeader ────────────────────────────────────────
         TimelineItem header   = new TimelineItem();
-        header.id             = c.AccountId;
-        header.title          = c.Account.Name;
+        header.id             = accountContext.accountId;
+        header.title          = accountContext.accountName;
         header.type           = 'AccountHeader';
         header.dateValue      = '';
         header.icon           = 'standard:account';
@@ -167,6 +161,75 @@ public with sharing class AccountTimelineController {
         List<TimelineItem> result = new List<TimelineItem>{ items[0] };
         result.addAll(activityItems);
         return result;
+    }
+
+    private static AccountContext resolveAccountContext(Id recordId, String objectApiName) {
+        if (recordId == null) return null;
+
+        String normalizedObjectApiName = String.isBlank(objectApiName) ? null : objectApiName.trim().toLowerCase();
+        Schema.SObjectType recordType = recordId.getSObjectType();
+
+        if (recordType == Account.SObjectType) {
+            Account acc = [
+                SELECT Id, Name
+                FROM   Account
+                WHERE  Id = :recordId
+                LIMIT  1
+            ];
+
+            AccountContext ctx = new AccountContext();
+            ctx.accountId = acc.Id;
+            ctx.accountName = acc.Name;
+            return ctx;
+        }
+
+        if (recordType == Case.SObjectType) {
+            Case c = [
+                SELECT AccountId, Account.Name
+                FROM   Case
+                WHERE  Id = :recordId
+                LIMIT  1
+            ];
+
+            if (c.AccountId == null) return null;
+
+            AccountContext ctx = new AccountContext();
+            ctx.accountId = c.AccountId;
+            ctx.accountName = c.Account.Name;
+            return ctx;
+        }
+
+        if (normalizedObjectApiName == 'account') {
+            Account acc = [
+                SELECT Id, Name
+                FROM   Account
+                WHERE  Id = :recordId
+                LIMIT  1
+            ];
+
+            AccountContext ctx = new AccountContext();
+            ctx.accountId = acc.Id;
+            ctx.accountName = acc.Name;
+            return ctx;
+        }
+
+        if (normalizedObjectApiName == 'case') {
+            Case c = [
+                SELECT AccountId, Account.Name
+                FROM   Case
+                WHERE  Id = :recordId
+                LIMIT  1
+            ];
+
+            if (c.AccountId == null) return null;
+
+            AccountContext ctx = new AccountContext();
+            ctx.accountId = c.AccountId;
+            ctx.accountName = c.Account.Name;
+            return ctx;
+        }
+
+        return null;
     }
 
     /**
@@ -431,6 +494,11 @@ public with sharing class AccountTimelineController {
             if (this.dateValue < o.dateValue)   return 1;
             return 0;
         }
+    }
+
+    private class AccountContext {
+        private Id accountId;
+        private String accountName;
     }
 
     public class CaseItem {

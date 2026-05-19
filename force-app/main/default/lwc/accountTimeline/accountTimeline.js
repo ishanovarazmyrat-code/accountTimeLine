@@ -1,8 +1,8 @@
 /**
  * @description  Account Activity Timeline — JavaScript Controller v1.0
  *
- *               From a Case record page, surfaces:
- *               - The parent Account's full activity history
+ *               From a Case or Account record page, surfaces:
+ *               - The Account's full activity history
  *                 (Tasks, Events, Emails) — "Account Activities" section
  *               - Every sibling Case under the same Account, with its own
  *                 nested Tasks, Events, and Emails — "Case History" section
@@ -71,8 +71,11 @@ export default class AccountTimeline extends LightningElement {
     // INTERNAL PROPERTIES
     // ─────────────────────────────────────────────────────────────
 
-    /** Id of the current Case record — injected by the Lightning record page */
+    /** Id of the current Case or Account record — injected by the Lightning record page */
     @api recordId;
+
+    /** API name of the current record object — injected by the Lightning record page */
+    @api objectApiName;
 
     /** Enriched activity items (Task, Event, Email) for the Activities section */
     @track items = [];
@@ -144,7 +147,11 @@ export default class AccountTimeline extends LightningElement {
      *               changes. Extracts the AccountHeader item for the title link,
      *               then enriches the remaining items for the flat activity list.
      */
-    @wire(getAccountTimeline, { caseId: '$recordId', dateFilter: '$selectedDateFilter' })
+    @wire(getAccountTimeline, {
+        recordId: '$recordId',
+        objectApiName: '$objectApiName',
+        dateFilter: '$selectedDateFilter'
+    })
     wiredTimeline({ data, error }) {
         this.isLoading = false;
 
@@ -155,8 +162,8 @@ export default class AccountTimeline extends LightningElement {
                 this.accountName = header.title;
                 this.accountUrl  = `/lightning/r/${header.id}/view`;
 
-                // Trigger Case loading only once (when accountId is first resolved)
-                if (!this.accountId) {
+                // Trigger Case loading when the resolved Account changes
+                if (this.accountId !== header.id) {
                     this.accountId = header.id;
                     this.loadCases(true);
                 }
